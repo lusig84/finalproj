@@ -1,4 +1,4 @@
-#cleaning data
+#cleaning data for just Atlantic County table
 raw_data <- suppressWarnings(readLines("AtlanticCounty_Age.csv")) # Read the CSV file line by line, ignoring any warnings (e.g., incomplete last line).
 data_lines <- raw_data[-c(1:2)] # Remove the first two lines of extra info from the data.
 header <- unlist(strsplit(data_lines[1], ","))  # Extract the first line as header
