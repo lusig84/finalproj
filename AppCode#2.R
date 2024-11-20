@@ -5,7 +5,12 @@ library(ggplot2)
 
 # Read the actual CSV file
 nj_diabetes_data <- read.csv("combined_data.csv", check.names = FALSE)  # This prevents R from modifying column names
-
+nj_diabetes_data <- nj_diabetes_data %>%
+  mutate(
+    `20-44 - Number` = as.numeric(`20-44 - Number`),
+    `45-64 - Number` = as.numeric(`45-64 - Number`),
+    `65+ - Number` = as.numeric(`65+ - Number`)
+  )
 print("Data loaded. First few rows:")
 print(head(nj_diabetes_data))
 
