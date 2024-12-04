@@ -7,7 +7,7 @@ library(sf)
 library(tidyr)
 
 # Load GeoJSON file for NJ counties
-geojson_path <- "~/Desktop/CSS/accfinalproj/njcountiesmap.geojson"
+geojson_path <- "~/Desktop/SOC360/HW/finalproj/njcountiesmap.geojson"
 nj_geojson <- st_read(geojson_path)
 
 # Read the CSV file for diabetes data
