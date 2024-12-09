@@ -10,7 +10,7 @@ library(ggplot2)
 library(tidyr)
 
 # Read the data
-nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj#real/Data/combined_data.csv", check.names = FALSE)
+nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj/Data/combined_data.csv", check.names = FALSE)
 nj_diabetes_data <- nj_diabetes_data %>%
   mutate(
     `20-44 - Number` = as.numeric(`20-44 - Number`),

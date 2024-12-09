@@ -1,12 +1,12 @@
-library(sf)
-library(tigris)
-library(viridis)
 library(shiny)
 library(bslib)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(DT)
+library(sf)
+library(tigris)
+library(viridis)
 
 # Read the actual CSV file
 nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj/Data/combined_data.csv", check.names = FALSE)
@@ -42,9 +42,10 @@ ui <- page_sidebar(
   title = "Interactive New Jersey Diabetes Statistics App",
   sidebar = sidebar(
     selectInput("view", "Select View:", 
-                choices = c("Summary", "Age Distribution", "County Table", "Trends", "Statistics", "Rankings", "Heatmap", "Top Counties", "Map")),
+                choices = c("Summary", "Age Distribution", "County Table", "Trends", 
+                            "Statistics", "Rankings", "Heatmap", "Top Counties", "Map")),
     conditionalPanel(
-      condition = "input.view != 'Summary'",
+      condition = "input.view != 'Summary' && input.view != 'Map'",
       selectInput("year", "Select Year(s):",
                   choices = sort(unique(nj_diabetes_data$Year)),
                   multiple = TRUE,
@@ -90,8 +91,8 @@ server <- function(input, output) {
            "Statistics" = tableOutput("stats_table"),
            "Rankings" = plotOutput("rankings_chart"),
            "Heatmap" = plotOutput("heatmap"),
-           "Top Counties" = plotOutput("top_counties_chart"),
-           "Map" = plotOutput("county_map", height = "600px"))
+           "Map" = plotOutput("county_map", height = "600px"),
+           "Top Counties" = plotOutput("top_counties_chart"))
   })
   
   # Summary
@@ -127,6 +128,7 @@ server <- function(input, output) {
   # Map
   output$county_map <- renderPlot({
     req(input$map_year)
+    
     map_data <- prepare_map_data(nj_diabetes_data, input$map_year)
     
     ggplot(map_data) +
@@ -149,4 +151,3 @@ server <- function(input, output) {
 
 # Run the app
 shinyApp(ui, server)
-

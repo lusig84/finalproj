@@ -6,7 +6,7 @@ library(tidyr)
 library(DT)
 
 # Read the actual CSV file
-nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj#real/Data/combined_data.csv", check.names = FALSE)
+nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj/Data/combined_data.csv", check.names = FALSE)
 nj_diabetes_data <- nj_diabetes_data %>%
   mutate(
     `20-44 - Number` = as.numeric(`20-44 - Number`),
@@ -16,7 +16,7 @@ nj_diabetes_data <- nj_diabetes_data %>%
 
 # Define the UI
 ui <- page_sidebar(
-  title = "Interactive New Jersey Diabetes Statistics App",
+  title = "NJ Health Lense",
   sidebar = sidebar(
     selectInput("view", "Select View:", 
                 choices = c("Summary", "Age Distribution", "County Table", "Trends", "Statistics", "Rankings", "Heatmap", "Top Counties")),
