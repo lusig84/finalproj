@@ -4,7 +4,7 @@ library(dplyr)
 library(ggplot2)
 
 # Read the actual CSV file
-nj_diabetes_data <- read.csv("combined_data.csv", check.names = FALSE)  # This prevents R from modifying column names
+nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj#real/Data/combined_data.csv", check.names = FALSE)  # This prevents R from modifying column names
 nj_diabetes_data <- nj_diabetes_data %>%
   mutate(
     `20-44 - Number` = as.numeric(`20-44 - Number`),
