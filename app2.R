@@ -6,7 +6,7 @@ library(tidyr)
 library(DT)
 
 # Read the actual CSV file
-nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj/combined_data.csv", check.names = FALSE)
+nj_diabetes_data <- read.csv("combined_data.csv", check.names = FALSE)
 nj_diabetes_data <- nj_diabetes_data %>%
   mutate(
     `20-44 - Number` = as.numeric(`20-44 - Number`),
