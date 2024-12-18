@@ -20,9 +20,9 @@ nj_diabetes_data <- nj_diabetes_data %>%
 nj_diabetes_data <- nj_diabetes_data %>%
   group_by(County) %>%
   mutate(
-    `20-44 - Number` = ifelse(Year == 2019, round((lag(`20-44 - Number`) + lead(`20-44 - Number`)) / 2), `20-44 - Number`),
-    `45-64 - Number` = ifelse(Year == 2019, round((lag(`45-64 - Number`) + lead(`45-64 - Number`)) / 2), `45-64 - Number`),
-    `65+ - Number` = ifelse(Year == 2019, round((lag(`65+ - Number`) + lead(`65+ - Number`)) / 2), `65+ - Number`)
+    `20-44 - Number` = ifelse(Year == 2019, round((lag(`20-44 - Number`) + lead(`20-44 - Number`)) / 2, 0), `20-44 - Number`),
+    `45-64 - Number` = ifelse(Year == 2019, round((lag(`45-64 - Number`) + lead(`45-64 - Number`)) / 2, 0), `45-64 - Number`),
+    `65+ - Number` = ifelse(Year == 2019, round((lag(`65+ - Number`) + lead(`65+ - Number`)) / 2, 0), `65+ - Number`)
   ) %>%
   ungroup()
 
@@ -47,21 +47,27 @@ nj_diabetes_data <- nj_diabetes_data %>%
     `65+ Rate` = (`65+ - Number` / Population) * 100000,
     Total_Cases = `20-44 - Number` + `45-64 - Number` + `65+ - Number`,
     Total_Rate = (Total_Cases / Population) * 100000,
-    Year = as.integer(Year)
+    Year = as.integer(Year),
+    Population_Category = cut(Population, 
+                              breaks = c(0, 200000, 500000, 800000, Inf),
+                              labels = c("Small (<200k)", "Medium (200k-500k)", 
+                                         "Large (500k-800k)", "Very Large (>800k)"))
   )
 
 # Define UI
 ui <- fluidPage(
-  titlePanel("NJ Diabetes Dashboard"),
+  titlePanel("New Jersey Diabetes Analytics Dashboard"),
   sidebarLayout(
     sidebarPanel(
       selectInput("year", "Select Year:", choices = sort(unique(nj_diabetes_data$Year)), selected = max(nj_diabetes_data$Year)),
-      selectInput("county", "Select County:", choices = unique(nj_diabetes_data$County), selected = unique(nj_diabetes_data$County)[1])
+      selectInput("county", "Select County:", choices = unique(nj_diabetes_data$County), selected = unique(nj_diabetes_data$County)[1]),
+      radioButtons("metric", "Metric to Display:", choices = c("Raw Numbers" = "numbers", "Per Capita" = "per_capita"), selected = "per_capita")
     ),
     mainPanel(
       tabsetPanel(
-        tabPanel("Per Capita Trends", plotOutput("trends_chart")),
-        tabPanel("County Table", DTOutput("county_table"))
+        tabPanel("Summary Table", DTOutput("summary_table")),
+        tabPanel("Trends Chart", plotOutput("trends_chart")),
+        tabPanel("County Rankings", plotOutput("rankings_chart"))
       )
     )
   )
@@ -70,24 +76,64 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output) {
   filtered_data <- reactive({
-    nj_diabetes_data %>%
-      filter(Year == input$year, County == input$county)
+    req(input$year)
+    nj_diabetes_data %>% filter(Year == input$year & County == input$county)
   })
   
-  output$trends_chart <- renderPlot({
+  # Render summary table
+  output$summary_table <- renderDT({
     filtered_data() %>%
-      ggplot(aes(x = Year, y = Total_Rate, color = County)) +
-      geom_line(size = 1.2) +
-      geom_point(size = 3) +
-      theme_minimal() +
-      labs(title = "Diabetes Rate per 100,000 Population", x = "Year", y = "Rate per 100,000 Population")
+      select(
+        County, Year, Population, 
+        `20-44 Cases` = `20-44 - Number`,
+        `45-64 Cases` = `45-64 - Number`,
+        `65+ Cases` = `65+ - Number`,
+        `20-44 Rate`, `45-64 Rate`, `65+ Rate`,
+        Total_Cases, Total_Rate
+      ) %>%
+      arrange(desc(Total_Cases)) %>%
+      mutate(across(starts_with("Rate"), round, 2))
   })
   
-  output$county_table <- renderDT({
+  # Render trends chart
+  output$trends_chart <- renderPlot({
+    req(input$metric)
+    metric_col <- if (input$metric == "numbers") "Total_Cases" else "Total_Rate"
+    
+    nj_diabetes_data %>%
+      group_by(Year) %>%
+      summarise(Value = sum(get(metric_col), na.rm = TRUE), .groups = 'drop') %>%
+      ggplot(aes(x = Year, y = Value)) +
+      geom_line(size = 1.2, color = "steelblue") +
+      geom_point(size = 3, color = "orange") +
+      theme_minimal() +
+      labs(
+        title = if (input$metric == "numbers") "Total Cases Over Time" else "Diabetes Rate Over Time",
+        x = "Year", 
+        y = if (input$metric == "numbers") "Total Cases" else "Cases per 100,000 Population"
+      )
+  })
+  
+  # Render rankings chart
+  output$rankings_chart <- renderPlot({
+    req(input$year, input$metric)
+    metric_col <- if (input$metric == "numbers") "Total_Cases" else "Total_Rate"
+    
     nj_diabetes_data %>%
       filter(Year == input$year) %>%
-      select(County, Year, Population, Total_Cases, Total_Rate) %>%
-      arrange(desc(Total_Rate))
+      arrange(desc(get(metric_col))) %>%
+      mutate(County = fct_reorder(County, get(metric_col))) %>%
+      ggplot(aes(x = County, y = get(metric_col), fill = Population_Category)) +
+      geom_col() +
+      coord_flip() +
+      scale_fill_viridis_d() +
+      theme_minimal() +
+      labs(
+        title = "County Rankings by Diabetes Metric",
+        x = "County", 
+        y = if (input$metric == "numbers") "Total Cases" else "Rate per 100,000 Population",
+        fill = "Population Category"
+      )
   })
 }
 
