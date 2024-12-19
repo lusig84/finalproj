@@ -1,0 +1,12 @@
+name: finalproj
+title: finalproj
+username: lusig
+account: lusig
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13562795
+bundleId: 9543784
+url: https://lusig.shinyapps.io/finalproj/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
