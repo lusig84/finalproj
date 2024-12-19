@@ -6,20 +6,33 @@ library(tidyr)
 library(DT)
 
 # Read the actual CSV file
-nj_diabetes_data <- read.csv("~/Desktop/SOC360/HW/finalproj/combined_data.csv", check.names = FALSE)
-nj_diabetes_data <- nj_diabetes_data %>%
+nj_diabetes_data <- read.csv("combined_data.csv", check.names = FALSE) %>%
+  filter(Year != 2019) %>%  # Exclude 2019 data
   mutate(
     `20-44 - Number` = as.numeric(`20-44 - Number`),
     `45-64 - Number` = as.numeric(`45-64 - Number`),
     `65+ - Number` = as.numeric(`65+ - Number`)
   )
 
+# Population data
+population_data <- data.frame(
+  County = c("Atlantic County", "Bergen County", "Burlington County", "Camden County", 
+             "Cape May County", "Cumberland County", "Essex County", "Gloucester County", 
+             "Hudson County", "Hunterdon County", "Mercer County", "Middlesex County", 
+             "Monmouth County", "Morris County", "Ocean County", "Passaic County", 
+             "Salem County", "Somerset County", "Sussex County", "Union County", "Warren County"),
+  Population = c(274536, 955743, 461869, 523498, 95262, 154160, 862768, 302273, 
+                 724858, 128950, 387328, 863202, 643612, 509288, 637235, 525054, 
+                 64830, 345353, 144220, 575363, 109637)
+)
+
 # Define the UI
 ui <- page_sidebar(
   title = "NJ Health Lense",
   sidebar = sidebar(
     selectInput("view", "Select View:", 
-                choices = c("Summary", "Age Distribution", "County Table", "Trends", "Statistics", "Rankings", "Heatmap", "Top Counties")),
+                choices = c("Summary", "Age Distribution", "County Table", "Trends", 
+                            "Statistics", "Rankings", "Heatmap", "Top Counties", "Per Capita")),
     conditionalPanel(
       condition = "input.view != 'Summary'",
       selectInput("year", "Select Year(s):",
@@ -44,24 +57,6 @@ server <- function(input, output) {
     req(input$year, input$county)
     nj_diabetes_data %>%
       filter(Year %in% input$year, County %in% input$county)
-  })
-  
-  # Render dynamic UI based on dropdown selection
-  output$dynamic_ui <- renderUI({
-    switch(input$view,
-           "Summary" = tagList(
-             h3("Dataset Overview"),
-             p("This section highlights key statistics and trends across all counties and years."),
-             tableOutput("summary_table"),
-             plotOutput("summary_trends")
-           ),
-           "Age Distribution" = plotOutput("age_distribution"),
-           "County Table" = DTOutput("county_table"),
-           "Trends" = plotOutput("trends_chart"),
-           "Statistics" = tableOutput("stats_table"),
-           "Rankings" = plotOutput("rankings_chart"),
-           "Heatmap" = plotOutput("heatmap"),
-           "Top Counties" = plotOutput("top_counties_chart"))
   })
   
   # Summary
@@ -215,7 +210,53 @@ server <- function(input, output) {
       ) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   })
+  
+  # Per Capita Analysis
+  output$per_capita_plot <- renderPlot({
+    req(filtered_data())
+    
+    # Calculate total cases and merge with population data
+    per_capita_data <- filtered_data() %>%
+      group_by(County, Year) %>%
+      summarise(
+        Total_Cases = sum(`20-44 - Number`, `45-64 - Number`, `65+ - Number`, na.rm = TRUE),
+        .groups = 'drop'
+      ) %>%
+      left_join(population_data, by = "County") %>%
+      mutate(Cases_per_100k = (Total_Cases / Population) * 100000)
+    
+    ggplot(per_capita_data, aes(x = reorder(County, -Cases_per_100k), y = Cases_per_100k, fill = County)) +
+      geom_bar(stat = "identity") +
+      coord_flip() +
+      theme_minimal() +
+      labs(
+        x = "County",
+        y = "Cases per 100,000 Population",
+        title = "Diabetes Cases per 100,000 Population by County",
+        subtitle = paste("Year(s):", paste(input$year, collapse = ", "))
+      ) +
+      theme(legend.position = "none")
+  })
+  
+  # Update dynamic UI to include the new Per Capita view
+  output$dynamic_ui <- renderUI({
+    switch(input$view,
+           "Summary" = tagList(
+             h3("Dataset Overview"),
+             p("This section highlights key statistics and trends across all counties and years."),
+             tableOutput("summary_table"),
+             plotOutput("summary_trends")
+           ),
+           "Age Distribution" = plotOutput("age_distribution"),
+           "County Table" = DTOutput("county_table"),
+           "Trends" = plotOutput("trends_chart"),
+           "Statistics" = tableOutput("stats_table"),
+           "Rankings" = plotOutput("rankings_chart"),
+           "Heatmap" = plotOutput("heatmap"),
+           "Top Counties" = plotOutput("top_counties_chart"),
+           "Per Capita" = plotOutput("per_capita_plot"))
+  })
 }
 
 # Run the app
-shinyApp(ui, server)
+shinyApp(ui = ui, server = server)
