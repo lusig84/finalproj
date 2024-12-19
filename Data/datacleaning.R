@@ -49,6 +49,10 @@ combined_data <- do.call(rbind, data_list)
 # View the combined dataset
 print(head(combined_data))
 
+
+# Check if the 2019 data has been removed
+summary(nj_diabetes_data)
+
 # Optionally, save the combined dataset to a CSV file
 write_csv(combined_data, "combined_data.csv")
 

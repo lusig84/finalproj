@@ -154,8 +154,8 @@ server <- function(input, output) {
     metric_col <- if (input$metric == "numbers") "Total_Cases" else "Total_Rate"
     filtered_data() %>%
       ggplot(aes(x = Year, y = !!sym(metric_col), color = County)) +
-      geom_line() +
-      geom_point() +
+      geom_line(na.rm = TRUE) +
+      geom_point(na.rm = TRUE) +
       theme_minimal()
   })
 }
